@@ -1,0 +1,52 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [master, qa, develop ]
+  pull_request:
+    branches: [master, qa, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Install dependencies
+      run: |
+        export PATH="$HOME/.cargo/bin:$PATH"
+        uv pip install --system -r requirements-dev.txt
+
+    - name: Run autoflake
+      run: |
+        autoflake --recursive --in-place --remove-all-unused-imports --remove-unused-variables . \
+        --exclude "__init__.py,migrations/*"
+
+    - name: Run black
+      run: black . --line-length=100 --check
+
+    - name: Run isort
+      run: isort . --profile black --filter-files --check-only
+
+    - name: Run flake8
+      run: |
+        flake8 . \
+        --max-line-length=100 \
+        --extend-ignore=E203,W503,E231,B008 \
+        --max-complexity=14 \
+        --per-file-ignores="app/models/domain/__init__.py:F401,F403,VNE003 app/schemas/__init__.py:F401,F403,VNE003 app/models/**/*.py:VNE003 app/schemas/*.py:VNE003 **/__init__.py:F401,F403 migrations/*:D100,D101,D102,D103" \
+        --exclude=".git,__pycache__,build,dist,*.egg-info,venv"
+
+    - name: Run bandit
+      run: |
+        bandit -r app/ -c pyproject.toml \
+        --exclude "app/tests/*,migrations/*"
