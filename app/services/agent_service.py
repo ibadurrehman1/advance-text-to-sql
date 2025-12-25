@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from langgraph.graph import END, START, StateGraph
 
@@ -40,12 +40,12 @@ class AgentService:
         self.graph = workflow.compile()
         return self.graph
 
-    async def chat_with_agent(self, messages: List[Dict]) -> str:
+    async def chat_with_agent(self, messages: List[Dict], thread_id: Optional[str] = None) -> str:
         # Ensure graph is built (extra safety)
         if self.graph is None:
             self.build_graph()
 
-        response = self.graph.invoke(
+        response = await self.graph.ainvoke(
             {
                 "messages": messages,
                 "shortlisted_tables": [],
@@ -53,6 +53,7 @@ class AgentService:
                 "generated_sql": "",
                 "raw_query": "",
                 "transformed_query": "",
+                "thread_id": thread_id,
             }
         )
 

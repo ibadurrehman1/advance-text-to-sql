@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class DatabaseSettings(BaseSettings):
+    # MongoDB Settings
     MONGODB_URL: str
     MONGODB_DB_NAME: str
     MONGODB_MIN_POOL_SIZE: int = 10

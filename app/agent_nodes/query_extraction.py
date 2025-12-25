@@ -17,11 +17,13 @@ query_extraction_agent = create_agent(
 )
 
 
-def query_extraction_node(state: AgentCustomState) -> AgentCustomState:
+async def query_extraction_node(state: AgentCustomState) -> Command:
 
     last_10_messages = format_messages(state["messages"][-10:])
 
-    response = query_extraction_agent.invoke({"messages": [HumanMessage(content=last_10_messages)]})
+    response = await query_extraction_agent.ainvoke(
+        {"messages": [HumanMessage(content=last_10_messages)]}
+    )
     structured_response: ExtractedQuery = response["structured_response"]
 
     if structured_response.off_topic:
@@ -30,8 +32,9 @@ def query_extraction_node(state: AgentCustomState) -> AgentCustomState:
         )
 
     return Command(
+        goto="shortlist_tables_node",
         update={
             "transformed_query": structured_response.extracted_query,
             "raw_query": state["messages"][-1].content,
-        }
+        },
     )

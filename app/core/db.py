@@ -27,3 +27,10 @@ class MongoDBConnector:
 
 
 mongodb = MongoDBConnector()
+
+
+def get_database() -> AsyncIOMotorClient:
+    """Get the MongoDB client instance."""
+    if mongodb.client is None:
+        raise RuntimeError("MongoDB client is not initialized. Call connect_to_mongodb first.")
+    return mongodb.client
