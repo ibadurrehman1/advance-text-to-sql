@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         export PATH="$HOME/.cargo/bin:$PATH"
-        uv pip install --system -r requirements-dev.txt
+        uv pip install -e .[dev]
 
     - name: Run autoflake
       run: |
