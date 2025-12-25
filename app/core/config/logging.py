@@ -79,7 +79,7 @@ class LoggingSettings(BaseSettings):
             },
             "root": {
                 "level": self.LEVEL.value,
-                "handlers": ["console", "file"] if self.TO_FILE else ["console"],
+                "handlers": ["file"] if self.TO_FILE else [],
             },
         }
 
