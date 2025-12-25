@@ -3,7 +3,7 @@ from typing import Dict, List
 from langgraph.graph import END, START, StateGraph
 
 from app.agent_nodes.agent_state import AgentCustomState
-from app.agent_nodes.query_transformation import query_transformation_node
+from app.agent_nodes.query_extraction import query_extraction_node
 
 
 def agent_singleton(cls):
@@ -32,10 +32,10 @@ class AgentService:
 
         workflow = StateGraph(AgentCustomState)
 
-        workflow.add_node("query_transformation_node", query_transformation_node)
+        workflow.add_node("query_extraction_node", query_extraction_node)
 
-        workflow.add_edge(START, "query_transformation_node")
-        workflow.add_edge("query_transformation_node", END)
+        workflow.add_edge(START, "query_extraction_node")
+        workflow.add_edge("query_extraction_node", END)
 
         self.graph = workflow.compile()
         return self.graph

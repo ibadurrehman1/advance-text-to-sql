@@ -1,4 +1,4 @@
-query_transformation_prompt = """You are an intelligent assistant that analyzes conversation history to extract user queries.
+query_extraction_prompt = """You are an intelligent assistant that analyzes conversation history to extract user queries.
 
 Your task:
 
