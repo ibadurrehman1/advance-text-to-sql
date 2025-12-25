@@ -37,7 +37,7 @@ class ChatService:
             )
 
         # Get AI response from agent service
-        ai_response = await self.agent_service.chat_with_agent(messages_list)
+        ai_response = await self.agent_service.chat_with_agent(messages_list, thread_id)
 
         # Save AI message
         ai_message = MessageCreate(
