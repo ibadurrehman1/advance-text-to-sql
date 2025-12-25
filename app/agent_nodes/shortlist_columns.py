@@ -4,8 +4,10 @@ from langchain_core.messages import HumanMessage
 from app.agent_nodes.agent_state import AgentCustomState
 from app.core.db import get_database
 from app.prompts.shortlist_columns import SHORTLIST_COLUMNS_PROMPT
+from app.repositories.business_repository import BusinessRepository
 from app.repositories.thread_repository import ThreadRepository
 from app.schemas.shortlist_columns import ShortlistColumnsResponse
+from app.services.business_service import BusinessService
 from app.services.thread_service import ThreadService
 from app.utilities.llm_utility import llm_utility
 
@@ -47,7 +49,9 @@ async def shortlist_columns_node(state: AgentCustomState) -> AgentCustomState:
         # Get thread-specific database connection
         db_client = get_database()
         thread_repository = ThreadRepository(db_client)
-        thread_service = ThreadService(thread_repository)
+        business_repository = BusinessRepository(db_client)
+        business_service = BusinessService(business_repository)
+        thread_service = ThreadService(thread_repository, business_service)
 
         columns_info = await thread_service.get_thread_columns(
             thread_id, include_tables=shortlisted_tables
@@ -73,9 +77,31 @@ async def shortlist_columns_node(state: AgentCustomState) -> AgentCustomState:
 
         columns_info_text = "\n".join(columns_text_parts)
 
-        # Create the prompt
+        # Get business context
+        # First get business_id from thread
+        business_id = await thread_service.thread_repository.get_thread_business_id(thread_id)
+        if not business_id:
+            raise ValueError(
+                "Thread business ID not found. This thread may have been created before the business-centric migration. "
+                "Please create a new thread using a business ID."
+            )
+
+        business_context = await thread_service.business_service.get_business_context(business_id)
+        if not business_context:
+            raise ValueError(
+                f"Business context not found for business ID: {business_id}. "
+                "The associated business may have been deleted or is inaccessible."
+            )
+
+        # Create the prompt with business context
         prompt = SHORTLIST_COLUMNS_PROMPT.format(
-            query=query, tables=", ".join(shortlisted_tables), columns_info=columns_info_text
+            query=query,
+            tables=", ".join(shortlisted_tables),
+            columns_info=columns_info_text,
+            business_name=business_context.business_name,
+            business_industry=business_context.business_industry,
+            business_description=business_context.business_description,
+            primary_tables=business_context.primary_tables or "Not specified",
         )
 
         # Invoke the agent

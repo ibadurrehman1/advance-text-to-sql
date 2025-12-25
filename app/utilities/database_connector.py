@@ -11,16 +11,32 @@ class DatabaseConnector:
     Supports operations for retrieving table and column metadata, and executing SQL queries.
     """
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, pool_size: int = 5, max_overflow: int = 10):
         """
-        Initialize the database connector with a connection URI.
+        Initialize the database connector with a connection URI and pooling configuration.
 
         Args:
             uri: Database connection URI (e.g., 'postgresql://user:pass@host:port/db',
                  'mssql+pyodbc://user:pass@host:port/db?driver=ODBC+Driver+17+for+SQL+Server')
+            pool_size: Number of connections to maintain in the pool
+            max_overflow: Maximum number of connections that can overflow the pool
         """
         self.uri = uri
-        self.engine: Engine = create_engine(uri)
+
+        # Configure connection pooling for better performance and resource management
+        engine_kwargs = {
+            "pool_size": pool_size,
+            "max_overflow": max_overflow,
+            "pool_timeout": 30,
+            "pool_recycle": 3600,  # Recycle connections after 1 hour
+            "pool_pre_ping": True,  # Validate connections before use
+        }
+
+        # SQLite doesn't support connection pooling in the same way
+        if uri.startswith("sqlite:"):
+            engine_kwargs = {"pool_pre_ping": True}
+
+        self.engine: Engine = create_engine(uri, **engine_kwargs)
         self.inspector = inspect(self.engine)
 
     def get_all_tables(

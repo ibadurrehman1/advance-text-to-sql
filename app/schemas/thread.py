@@ -5,27 +5,13 @@ from pydantic import BaseModel, Field
 
 
 class ThreadCreateRequest(BaseModel):
-    """Request schema for creating a new thread with SQL database connection."""
+    """Request schema for creating a new thread with business database connection."""
 
-    sql_uri: str = Field(
-        description="SQL database connection URI",
-        example="postgresql://user:password@localhost:5432/dbname",
-    )
-    schema: Optional[str] = Field(
-        default=None, description="Database schema name (optional)", example="public"
-    )
-    include_tables: Optional[str] = Field(
-        default=None,
-        description="Comma-separated list of tables to include (optional)",
-        example="users,orders,products",
-    )
-    exclude_tables: Optional[str] = Field(
-        default=None,
-        description="Comma-separated list of tables to exclude (optional)",
-        example="migrations,logs",
+    business_id: str = Field(
+        description="Business ID to connect to", example="550e8400-e29b-41d4-a716-446655440000"
     )
     name: Optional[str] = Field(
-        default=None, description="Optional name for the thread", example="Sales Database Analysis"
+        default=None, description="Optional name for the thread", example="Sales Analysis Thread"
     )
     description: Optional[str] = Field(
         default=None,
@@ -40,13 +26,13 @@ class ThreadResponse(BaseModel):
     thread_id: str = Field(description="Unique thread identifier")
     name: Optional[str] = Field(description="Thread name")
     description: Optional[str] = Field(description="Thread description")
-    sql_uri: str = Field(description="Database connection URI (masked for security)")
-    schema: Optional[str] = Field(description="Database schema")
-    include_tables: Optional[str] = Field(description="Included tables")
-    exclude_tables: Optional[str] = Field(description="Excluded tables")
+    business_id: str = Field(description="Business ID this thread is connected to")
+    business_name: str = Field(description="Business name for reference")
     tables_count: int = Field(description="Number of available tables")
     columns_count: int = Field(description="Number of available columns")
+    created_by: str = Field(description="User ID who created the thread")
     created_at: datetime = Field(description="Thread creation timestamp")
+    updated_at: datetime = Field(description="Thread last update timestamp")
     status: str = Field(description="Thread status (active, error, etc.)")
 
 
