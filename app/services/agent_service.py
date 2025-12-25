@@ -4,6 +4,8 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agent_nodes.agent_state import AgentCustomState
 from app.agent_nodes.query_extraction import query_extraction_node
+from app.agent_nodes.shortlist_columns import shortlist_columns_node
+from app.agent_nodes.shortlist_tables import shortlist_tables_node
 
 
 def agent_singleton(cls):
@@ -33,9 +35,14 @@ class AgentService:
         workflow = StateGraph(AgentCustomState)
 
         workflow.add_node("query_extraction_node", query_extraction_node)
+        workflow.add_node("shortlist_tables_node", shortlist_tables_node)
+        workflow.add_node("shortlist_columns_node", shortlist_columns_node)
 
         workflow.add_edge(START, "query_extraction_node")
-        workflow.add_edge("query_extraction_node", END)
+        # query_extraction_node uses Command to route (either to END or continues)
+        # If not off-topic, it will continue to shortlist_tables_node
+        workflow.add_edge("shortlist_tables_node", "shortlist_columns_node")
+        workflow.add_edge("shortlist_columns_node", END)
 
         self.graph = workflow.compile()
         return self.graph
