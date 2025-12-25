@@ -225,21 +225,42 @@ class BusinessRepository:
     def _mask_sql_uri(self, sql_uri: str) -> str:
         """Mask sensitive information in SQL URI for security."""
         try:
-            # Simple masking - replace password with ***
-            if "://" in sql_uri and "@" in sql_uri:
-                parts = sql_uri.split("://")
-                if len(parts) == 2:
-                    protocol = parts[0]
-                    rest = parts[1]
+            if not sql_uri or "://" not in sql_uri:
+                return "***masked***"
 
-                    if "@" in rest:
-                        auth_part, host_part = rest.split("@", 1)
-                        if ":" in auth_part:
-                            username, _ = auth_part.split(":", 1)
-                            return f"{protocol}://{username}:***@{host_part}"
-                        else:
-                            return f"{protocol}://***@{host_part}"
+            parts = sql_uri.split("://")
+            if len(parts) != 2:
+                return "***masked***"
 
-            return sql_uri  # Return as-is if can't parse
+            protocol = parts[0]
+            rest = parts[1]
+
+            # Case 1: URI with authentication (user:pass@host or user@host)
+            if "@" in rest:
+                auth_part, host_part = rest.split("@", 1)
+                if ":" in auth_part:
+                    username, _ = auth_part.split(":", 1)
+                    return f"{protocol}://{username}:***@{host_part}"
+                else:
+                    return f"{protocol}://***@{host_part}"
+
+            # Case 2: URI without explicit authentication (like trusted connection, sqlite, etc.)
+            # Mask the server/database details for security
+            if protocol.lower() in ["sqlite"]:
+                # For SQLite, just show the protocol
+                return f"{protocol}://***"
+            elif "/" in rest:
+                # For server-based DBs without auth, mask server but show database name pattern
+                if "?" in rest:
+                    # Has query parameters (like SQL Server with trusted_connection)
+                    db_part = rest.split("?")[0]
+                    return f"{protocol}://***/{db_part.split('/')[-1]}?***"
+                else:
+                    # Simple server/database format
+                    return f"{protocol}://***/{rest.split('/')[-1]}"
+            else:
+                # Fallback for any other format
+                return f"{protocol}://***"
+
         except Exception:
             return "***masked***"  # Fallback masking
