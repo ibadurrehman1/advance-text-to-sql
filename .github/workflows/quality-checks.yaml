@@ -1,21 +1,21 @@
-name: Code Quality
+name: Quality Checks
 
 on:
-  push:
-    branches: [master, qa, develop]
   pull_request:
+    branches: [master, qa, develop]
+  push:
     branches: [master, qa, develop]
 
 jobs:
-  code-quality:
+  pre-commit:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -24,41 +24,26 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Create virtual environment
-        run: |
-          uv venv
+      - name: Install pre-commit
+        run: uv pip install --system pre-commit
 
-      - name: Install project with dev dependencies
-        run: |
-          uv pip install -e ".[dev]"
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
 
-      - name: Run autoflake
+      - name: Run pre-commit on PR diff
+        if: github.event_name == 'pull_request'
         run: |
-          uv run autoflake \
-            --recursive \
-            --in-place \
-            --remove-all-unused-imports \
-            --remove-unused-variables . \
-            --exclude "__init__.py,migrations/*"
+          git fetch origin ${{ github.base_ref }}
+          pre-commit run \
+            --from-ref origin/${{ github.base_ref }} \
+            --to-ref HEAD
 
-      - name: Run black
+      - name: Run pre-commit on push diff
+        if: github.event_name == 'push'
         run: |
-          uv run black . --line-length=100 --check
-
-      - name: Run isort
-        run: |
-          uv run isort . --profile black --filter-files --check-only
-
-      - name: Run flake8
-        run: |
-          uv run flake8 . \
-            --max-line-length=100 \
-            --extend-ignore=E203,W503,E231,B008 \
-            --max-complexity=14 \
-            --per-file-ignores="app/models/domain/__init__.py:F401,F403,VNE003 app/schemas/__init__.py:F401,F403,VNE003 app/models/**/*.py:VNE003 app/schemas/*.py:VNE003 **/__init__.py:F401,F403 migrations/*:D100,D101,D102,D103" \
-            --exclude=".git,__pycache__,build,dist,*.egg-info,venv"
-
-      - name: Run bandit
-        run: |
-          uv run bandit -r app/ -c pyproject.toml \
-            --exclude "app/tests/*,migrations/*"
+          pre-commit run \
+            --from-ref ${{ github.event.before }} \
+            --to-ref HEAD
