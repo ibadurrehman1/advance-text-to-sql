@@ -4,11 +4,13 @@ from .application import ApplicationSettings
 from .database import DatabaseSettings
 from .logging import LoggingSettings
 from .security import SecuritySettings
+from .ai import AISettings
 
 
 class Settings(BaseSettings):
     app: ApplicationSettings = ApplicationSettings()
     db: DatabaseSettings = DatabaseSettings()
+    ai: AISettings = AISettings()
     security: SecuritySettings = SecuritySettings()
     logging: LoggingSettings = LoggingSettings()
 

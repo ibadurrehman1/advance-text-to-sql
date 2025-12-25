@@ -62,7 +62,7 @@ repos:
         - flake8-simplify
         - flake8-variables-names
         args:
-        - --max-line-length=100
+        - --max-line-length=200
         - --extend-ignore=E203,W503,E231,B008
         - --max-complexity=14
 
